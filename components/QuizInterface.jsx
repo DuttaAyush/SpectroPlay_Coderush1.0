@@ -10,27 +10,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { ArrowLeft, Check, X, Clock, ChevronRight } from 'lucide-react-native';
 
-interface QuizQuestion {
-  id: number;
-  type: 'multiple-choice' | 'slider' | 'text-input';
-  question: string;
-  options?: string[];
-  correctAnswer?: string | number;
-  sliderRange?: { min: number; max: number; step: number };
-  unit?: string;
-}
-
-interface AnswerOptionProps {
-  option: string;
-  index: number;
-  isSelected: boolean;
-  isCorrect?: boolean;
-  isIncorrect?: boolean;
-  onSelect: () => void;
-  showResult?: boolean;
-}
-
-const AnswerOption: React.FC<AnswerOptionProps> = ({
+const AnswerOption = ({
   option,
   index,
   isSelected,
@@ -79,18 +59,7 @@ const AnswerOption: React.FC<AnswerOptionProps> = ({
   );
 };
 
-interface SliderQuestionProps {
-  value: number;
-  min: number;
-  max: number;
-  step: number;
-  unit?: string;
-  onChange: (value: number) => void;
-  showResult?: boolean;
-  correctAnswer?: number;
-}
-
-const SliderQuestion: React.FC<SliderQuestionProps> = ({
+const SliderQuestion = ({
   value,
   min,
   max,
@@ -131,19 +100,13 @@ const SliderQuestion: React.FC<SliderQuestionProps> = ({
   );
 };
 
-interface QuizInterfaceProps {
-  questions: QuizQuestion[];
-  onClose: () => void;
-  onComplete: (score: number) => void;
-}
-
-export const QuizInterface: React.FC<QuizInterfaceProps> = ({
+export const QuizInterface = ({
   questions,
   onClose,
   onComplete,
 }) => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [answers, setAnswers] = useState<{ [key: number]: any }>({});
+  const [answers, setAnswers] = useState({});
   const [showResult, setShowResult] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState(300); // 5 minutes
 
@@ -166,13 +129,13 @@ export const QuizInterface: React.FC<QuizInterfaceProps> = ({
     return () => clearInterval(timer);
   }, []);
 
-  const formatTime = (seconds: number) => {
+  const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const handleAnswerSelect = (answer: any) => {
+  const handleAnswerSelect = (answer) => {
     setAnswers({ ...answers, [currentQuestion.id]: answer });
     setShowResult(true);
     
@@ -242,7 +205,7 @@ export const QuizInterface: React.FC<QuizInterfaceProps> = ({
             unit={currentQuestion.unit}
             onChange={(value) => setAnswers({ ...answers, [currentQuestion.id]: value })}
             showResult={showResult}
-            correctAnswer={currentQuestion.correctAnswer as number}
+            correctAnswer={currentQuestion.correctAnswer}
           />
         );
 

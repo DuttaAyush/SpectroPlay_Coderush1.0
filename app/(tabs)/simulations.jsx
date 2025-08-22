@@ -13,15 +13,7 @@ import { Play, RotateCcw, Settings, Mic, Hand, Volume2, ArrowLeft, Maximize, Mov
 
 const { width, height } = Dimensions.get('window');
 
-interface ControlButtonProps {
-  icon: React.ReactNode;
-  label: string;
-  onPress: () => void;
-  variant?: 'primary' | 'secondary' | 'danger';
-  disabled?: boolean;
-}
-
-const ControlButton: React.FC<ControlButtonProps> = ({
+const ControlButton = ({
   icon,
   label,
   onPress,
@@ -58,11 +50,7 @@ const ControlButton: React.FC<ControlButtonProps> = ({
   );
 };
 
-const GestureIndicator: React.FC<{
-  gesture: string;
-  description: string;
-  icon: React.ReactNode;
-}> = ({ gesture, description, icon }) => (
+const GestureIndicator = ({ gesture, description, icon }) => (
   <View style={styles.gestureIndicator}>
     <View style={styles.gestureIcon}>
       {icon}
@@ -100,100 +88,95 @@ export default function SimulationsScreen() {
     }
   };
 
+  const handleToggleFullscreen = () => {
+    setIsFullscreen(!isFullscreen);
+  };
+
   if (isSimulationActive) {
     return (
       <View style={styles.simulationContainer}>
-        <StatusBar style="light" hidden={isFullscreen} />
-        
-        {/* AR/VR Simulation View */}
-        <View style={styles.simulationView}>
-          <LinearGradient
-            colors={['rgba(6, 182, 212, 0.1)', 'rgba(59, 130, 246, 0.1)']}
-            style={styles.arOverlay}
+        <StatusBar style="light" backgroundColor="#0A0B1A" />
+        <LinearGradient
+          colors={['rgba(6, 182, 212, 0.1)', 'rgba(59, 130, 246, 0.1)']}
+          style={styles.arOverlay}
+        >
+          {/* Simulation Content Placeholder */}
+          <View style={styles.simulationContent}>
+            <View style={styles.dnaVisualization}>
+              <Text style={styles.simulationTitle}>Cell Division</Text>
+              <Text style={styles.simulationSubtitle}>Step {currentStep} of {totalSteps}</Text>
+              
+              {/* 3D Model Placeholder */}
+              <View style={styles.modelContainer}>
+                <LinearGradient
+                  colors={['#3B82F6', '#8B5CF6']}
+                  style={styles.modelPlaceholder}
+                >
+                  <Text style={styles.modelText}>3D Cell Model</Text>
+                  <Text style={styles.modelSubtext}>Mitosis in Progress</Text>
+                </LinearGradient>
+              </View>
+            </View>
+          </View>
+
+          {/* Gesture and Voice Controls */}
+          <View style={styles.controlsOverlay}>
+            <View style={styles.gestureControls}>
+              <TouchableOpacity style={styles.iconButton}>
+                <Hand size={24} color="#3B82F6" />
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.iconButton}>
+                <Volume2 size={24} color="#8B5CF6" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.simulationControls}>
+              <TouchableOpacity 
+                style={[styles.iconButton, currentStep <= 1 && styles.disabledButton]}
+                onPress={handlePreviousStep}
+                disabled={currentStep <= 1}
+              >
+                <ArrowLeft size={24} color="#FFFFFF" />
+              </TouchableOpacity>
+
+              <View style={styles.stepControls}>
+                <TouchableOpacity style={styles.stepButton} onPress={handleResetSimulation}>
+                  <RotateCcw size={20} color="#FFFFFF" />
+                  <Text style={styles.stepButtonText}>Reset</Text>
+                </TouchableOpacity>
+                
+                <View style={styles.stepIndicator}>
+                  <Text style={styles.stepText}>{currentStep}/{totalSteps}</Text>
+                </View>
+              </View>
+
+              <TouchableOpacity 
+                style={[styles.iconButton, currentStep >= totalSteps && styles.disabledButton]}
+                onPress={handleNextStep}
+                disabled={currentStep >= totalSteps}
+              >
+                <ArrowLeft size={24} color="#FFFFFF" style={{ transform: [{ rotate: '180deg' }] }} />
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Exit Button */}
+          <TouchableOpacity 
+            style={styles.exitButton}
+            onPress={() => setIsSimulationActive(false)}
           >
-            {/* Simulation Content Placeholder */}
-            <View style={styles.simulationContent}>
-              <View style={styles.dnaVisualization}>
-                <Text style={styles.simulationTitle}>Cell Division</Text>
-                <Text style={styles.simulationSubtitle}>Step {currentStep} of {totalSteps}</Text>
-                
-                {/* 3D Model Placeholder */}
-                <View style={styles.modelContainer}>
-                  <LinearGradient
-                    colors={['#3B82F6', '#8B5CF6']}
-                    style={styles.modelPlaceholder}
-                  >
-                    <Text style={styles.modelText}>3D Cell Model</Text>
-                    <Text style={styles.modelSubtext}>Mitosis in Progress</Text>
-                  </LinearGradient>
-                </View>
-              </View>
-            </View>
-
-            {/* Gesture and Voice Controls */}
-            <View style={styles.controlsOverlay}>
-              <View style={styles.gestureControls}>
-                <GestureIndicator
-                  gesture="Rotate"
-                  description="Pinch & rotate to examine"
-                  icon={<Hand size={20} color="#06B6D4" />}
-                />
-                <GestureIndicator
-                  gesture="Voice Command"
-                  description="Say 'Next stage'"
-                  icon={<Mic size={20} color="#8B5CF6" />}
-                />
-              </View>
-
-              {/* Simulation Controls */}
-              <View style={styles.simulationControls}>
-                <TouchableOpacity
-                  style={styles.iconButton}
-                  onPress={() => setIsSimulationActive(false)}
-                >
-                  <ArrowLeft size={24} color="#FFFFFF" />
-                </TouchableOpacity>
-                
-                <View style={styles.stepControls}>
-                  <TouchableOpacity
-                    style={[styles.stepButton, currentStep === 1 && styles.disabledButton]}
-                    onPress={handlePreviousStep}
-                    disabled={currentStep === 1}
-                  >
-                    <Text style={styles.stepButtonText}>Previous</Text>
-                  </TouchableOpacity>
-                  
-                  <View style={styles.stepIndicator}>
-                    <Text style={styles.stepText}>{currentStep}/{totalSteps}</Text>
-                  </View>
-                  
-                  <TouchableOpacity
-                    style={[styles.stepButton, currentStep === totalSteps && styles.disabledButton]}
-                    onPress={handleNextStep}
-                    disabled={currentStep === totalSteps}
-                  >
-                    <Text style={styles.stepButtonText}>Next</Text>
-                  </TouchableOpacity>
-                </View>
-
-                <TouchableOpacity
-                  style={styles.iconButton}
-                  onPress={() => setIsFullscreen(!isFullscreen)}
-                >
-                  <Maximize size={24} color="#FFFFFF" />
-                </TouchableOpacity>
-              </View>
-            </View>
-          </LinearGradient>
-        </View>
+            <ArrowLeft size={24} color="#FFFFFF" />
+          </TouchableOpacity>
+        </LinearGradient>
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
-      <StatusBar style="light" />
+      <StatusBar style="light" backgroundColor="#0A0B1A" />
       
+      {/* Header */}
       <LinearGradient
         colors={['#0A0B1A', '#1F2937']}
         style={styles.header}
@@ -203,21 +186,13 @@ export default function SimulationsScreen() {
       </LinearGradient>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Experiment Overview */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Overview</Text>
-          <Text style={styles.description}>
-            Explore the fascinating process of mitosis through immersive AR visualization. 
-            Watch as a single cell divides into two identical daughter cells, and interact 
-            with each phase of the cell cycle.
-          </Text>
-        </View>
-
         {/* Learning Objectives */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Learning Objectives</Text>
+          <Text style={styles.description}>
+            Explore the intricate process of cell division through immersive AR visualization.
+          </Text>
           <View style={styles.objectivesList}>
-            <Text style={styles.objective}>• Identify the phases of mitosis</Text>
             <Text style={styles.objective}>• Understand chromosome behavior during division</Text>
             <Text style={styles.objective}>• Observe spindle fiber formation and function</Text>
             <Text style={styles.objective}>• Recognize cellular changes throughout the process</Text>
@@ -344,11 +319,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
-    marginBottom: 2,
+    marginBottom: 4,
   },
   gestureDescription: {
     fontSize: 14,
     color: '#9CA3AF',
+    lineHeight: 20,
   },
   actionSection: {
     paddingHorizontal: 20,
@@ -397,46 +373,44 @@ const styles = StyleSheet.create({
   // Simulation Screen Styles
   simulationContainer: {
     flex: 1,
-    backgroundColor: '#000000',
-  },
-  simulationView: {
-    flex: 1,
+    backgroundColor: '#0A0B1A',
   },
   arOverlay: {
     flex: 1,
-    position: 'relative',
   },
   simulationContent: {
     flex: 1,
-    alignItems: 'center',
     justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
   },
   dnaVisualization: {
     alignItems: 'center',
+    marginBottom: 40,
   },
   simulationTitle: {
     fontSize: 24,
     fontWeight: '700',
     color: '#FFFFFF',
-    marginBottom: 4,
+    marginBottom: 8,
     textAlign: 'center',
   },
   simulationSubtitle: {
     fontSize: 16,
     color: '#9CA3AF',
-    marginBottom: 40,
+    marginBottom: 32,
+    textAlign: 'center',
   },
   modelContainer: {
     width: width * 0.8,
     height: width * 0.8,
-    borderRadius: width * 0.4,
+    borderRadius: 20,
     overflow: 'hidden',
   },
   modelPlaceholder: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    opacity: 0.8,
   },
   modelText: {
     fontSize: 18,
@@ -507,5 +481,16 @@ const styles = StyleSheet.create({
   disabledButton: {
     backgroundColor: '#4B5563',
     opacity: 0.5,
+  },
+  exitButton: {
+    position: 'absolute',
+    top: 60,
+    left: 20,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

@@ -13,14 +13,7 @@ import { X, Chrome as Home, FlaskConical, ChartBar, User, Settings, BookOpen, Aw
 
 const { width, height } = Dimensions.get('window');
 
-interface MenuItemProps {
-  icon: React.ReactNode;
-  title: string;
-  onPress: () => void;
-  isActive?: boolean;
-}
-
-const MenuItem: React.FC<MenuItemProps> = ({ icon, title, onPress, isActive }) => (
+const MenuItem = ({ icon, title, onPress, isActive }) => (
   <TouchableOpacity
     style={[styles.menuItem, isActive && styles.activeMenuItem]}
     onPress={onPress}
@@ -35,13 +28,7 @@ const MenuItem: React.FC<MenuItemProps> = ({ icon, title, onPress, isActive }) =
   </TouchableOpacity>
 );
 
-interface HamburgerMenuProps {
-  visible: boolean;
-  onClose: () => void;
-  activeRoute?: string;
-}
-
-export const HamburgerMenu: React.FC<HamburgerMenuProps> = ({
+export const HamburgerMenu = ({
   visible,
   onClose,
   activeRoute = 'Home',
@@ -56,7 +43,7 @@ export const HamburgerMenu: React.FC<HamburgerMenuProps> = ({
     }).start();
   }, [visible]);
 
-  const handleMenuItemPress = (route: string) => {
+  const handleMenuItemPress = (route) => {
     console.log(`Navigate to ${route}`);
     onClose();
   };
