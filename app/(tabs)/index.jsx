@@ -11,17 +11,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
 import { AArrowDown as DNA, Zap, Globe, Atom, ArrowRight, Play } from 'lucide-react-native';
 
-interface ModuleTileProps {
-  title: string;
-  description: string;
-  progress: number;
-  icon: React.ReactNode;
-  imageUrl: string;
-  onPress: () => void;
-  isNew?: boolean;
-}
-
-const ModuleTile: React.FC<ModuleTileProps> = ({
+const ModuleTile = ({
   title,
   description,
   progress,
@@ -68,12 +58,7 @@ const ModuleTile: React.FC<ModuleTileProps> = ({
   </TouchableOpacity>
 );
 
-const QuickActionCard: React.FC<{
-  title: string;
-  subtitle: string;
-  icon: React.ReactNode;
-  onPress: () => void;
-}> = ({ title, subtitle, icon, onPress }) => (
+const QuickActionCard = ({ title, subtitle, icon, onPress }) => (
   <TouchableOpacity style={styles.quickActionCard} onPress={onPress} activeOpacity={0.8}>
     <View style={styles.quickActionIcon}>
       {icon}
@@ -86,11 +71,11 @@ const QuickActionCard: React.FC<{
 );
 
 export default function HomeScreen() {
-  const handleModulePress = (moduleName: string) => {
+  const handleModulePress = (moduleName) => {
     console.log(`Opening ${moduleName} module`);
   };
 
-  const handleQuickAction = (action: string) => {
+  const handleQuickAction = (action) => {
     console.log(`Quick action: ${action}`);
   };
 

@@ -13,15 +13,7 @@ import { Users, TrendingUp, Clock, Award, BookOpen, MoveHorizontal as MoreHorizo
 
 const { width } = Dimensions.get('window');
 
-interface MetricCardProps {
-  title: string;
-  value: string;
-  change: string;
-  icon: React.ReactNode;
-  color: string;
-}
-
-const MetricCard: React.FC<MetricCardProps> = ({ title, value, change, icon, color }) => (
+const MetricCard = ({ title, value, change, icon, color }) => (
   <View style={styles.metricCard}>
     <LinearGradient
       colors={[color + '20', color + '10']}
@@ -39,15 +31,7 @@ const MetricCard: React.FC<MetricCardProps> = ({ title, value, change, icon, col
   </View>
 );
 
-interface StudentRowProps {
-  name: string;
-  avatar: string;
-  progress: number;
-  lastActive: string;
-  modules: number;
-}
-
-const StudentRow: React.FC<StudentRowProps> = ({ name, avatar, progress, lastActive, modules }) => (
+const StudentRow = ({ name, avatar, progress, lastActive, modules }) => (
   <TouchableOpacity style={styles.studentRow} activeOpacity={0.7}>
     <View style={styles.studentAvatar}>
       <Text style={styles.avatarText}>{avatar}</Text>
@@ -72,14 +56,7 @@ const StudentRow: React.FC<StudentRowProps> = ({ name, avatar, progress, lastAct
   </TouchableOpacity>
 );
 
-interface ChartBarProps {
-  label: string;
-  value: number;
-  maxValue: number;
-  color: string;
-}
-
-const ChartBar: React.FC<ChartBarProps> = ({ label, value, maxValue, color }) => {
+const ChartBar = ({ label, value, maxValue, color }) => {
   const percentage = (value / maxValue) * 100;
   
   return (

@@ -11,18 +11,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
 import { User, Settings, Bell, Moon, Volume2, Download, CircleHelp as HelpCircle, Shield, ChevronRight, Award, BookOpen, Clock, CreditCard as Edit } from 'lucide-react-native';
 
-interface SettingRowProps {
-  icon: React.ReactNode;
-  title: string;
-  subtitle?: string;
-  onPress?: () => void;
-  hasSwitch?: boolean;
-  switchValue?: boolean;
-  onSwitchToggle?: (value: boolean) => void;
-  showChevron?: boolean;
-}
-
-const SettingRow: React.FC<SettingRowProps> = ({
+const SettingRow = ({
   icon,
   title,
   subtitle,
@@ -57,14 +46,7 @@ const SettingRow: React.FC<SettingRowProps> = ({
   </TouchableOpacity>
 );
 
-interface StatCardProps {
-  icon: React.ReactNode;
-  value: string;
-  label: string;
-  color: string;
-}
-
-const StatCard: React.FC<StatCardProps> = ({ icon, value, label, color }) => (
+const StatCard = ({ icon, value, label, color }) => (
   <View style={[styles.statCard, { borderColor: color + '30' }]}>
     <LinearGradient
       colors={[color + '20', color + '10']}
@@ -89,7 +71,7 @@ export default function ProfileScreen() {
     console.log('Edit profile');
   };
 
-  const handleSettingPress = (setting: string) => {
+  const handleSettingPress = (setting) => {
     console.log(`Navigate to ${setting}`);
   };
 
