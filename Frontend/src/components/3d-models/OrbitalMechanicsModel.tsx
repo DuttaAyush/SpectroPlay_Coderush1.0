@@ -4,6 +4,9 @@ import { Sphere, Cylinder, Text, Line, Ring } from '@react-three/drei';
 import * as THREE from 'three';
 
 interface OrbitalMechanicsModelProps {
+  currentPhase?: number;
+  isPlaying?: boolean;
+  onObjectClick?: (objectName: string) => void;
   showOrbits?: boolean;
   showLabels?: boolean;
   timeScale?: number;
@@ -29,6 +32,9 @@ interface Planet {
 }
 
 export function OrbitalMechanicsModel({
+  currentPhase = 0,
+  isPlaying = false,
+  onObjectClick,
   showOrbits = true,
   showLabels = true,
   timeScale = 1,
@@ -163,6 +169,8 @@ export function OrbitalMechanicsModel({
 
   // Animation loop
   useFrame((state, delta) => {
+    if (!isPlaying) return;
+    
     setAnimationTime(prev => prev + delta);
     
     if (groupRef.current) {
@@ -241,6 +249,7 @@ export function OrbitalMechanicsModel({
             args={[planet.radius, 16, 16]}
             onPointerOver={() => setHoveredPlanet(planet.id)}
             onPointerOut={() => setHoveredPlanet(null)}
+            onClick={() => onObjectClick?.(planet.name)}
           >
             <meshStandardMaterial 
               color={planet.color}
