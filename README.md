@@ -169,6 +169,21 @@ We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.
 - **Performance Optimization** - Better rendering and loading
 - **Educational Content** - Learning materials and assessments
 
+
+## 📸 Screenshots
+
+### Home & Interactive 3D Preview
+![Home & 3D Preview](./Frontend/screenshots/home-3d-preview.png)
+
+### Teacher Dashboard
+![Teacher Dashboard](./Frontend/screenshots/teacher-dashboard.png)
+
+### DNA Animation
+![DNA Animation](./Frontend/screenshots/dna-animation.png)
+
+### Simulations List
+![Simulations List](./Frontend/screenshots/simulations-list.png)
+
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
