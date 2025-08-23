@@ -169,19 +169,20 @@ We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.
 - **Performance Optimization** - Better rendering and loading
 - **Educational Content** - Learning materials and assessments
 
+
 ## 📸 Screenshots
 
 ### Home & Interactive 3D Preview
-![Home & 3D Preview](./Frontend/screenshots/home-3d-preview.png)
+![Home & 3D Preview](./Frontend/screenshots/01-home-3d-preview.png)
 
 ### Teacher Dashboard
-![Teacher Dashboard](./Frontend/screenshots/teacher-dashboard.png)
+![Teacher Dashboard](./Frontend/screenshots/02-teacher-dashboard.png)
 
 ### DNA Animation
-![DNA Animation](./Frontend/screenshots/dna-animation.png)
+![DNA Animation](./Frontend/screenshots/03-dna-animation.png)
 
 ### Simulations List
-![Simulations List](./Frontend/screenshots/simulations-list.png)
+![Simulations List](./Frontend/screenshots/04-simulations-list.png)
 
 ## 📄 License
 
