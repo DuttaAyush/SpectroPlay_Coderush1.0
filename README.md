@@ -8,7 +8,6 @@
 [![Vite](https://img.shields.io/badge/Vite-5.4.19-purple.svg)](https://vitejs.dev/)
 
 ## 🎯 Project Overview
-
 InsightXR transforms abstract STEM concepts into **immersive, interactive 3D learning experiences**. Built with cutting-edge Three.js technology, our platform makes complex scientific concepts tangible and engaging for students of all ages.
 
 ### 🌟 Key Features
