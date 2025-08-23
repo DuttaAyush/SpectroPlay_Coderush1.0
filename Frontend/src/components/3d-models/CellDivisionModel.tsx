@@ -4,6 +4,9 @@ import { Sphere, Cylinder, Text, Line } from '@react-three/drei';
 import * as THREE from 'three';
 
 interface CellDivisionModelProps {
+  currentPhase?: number;
+  isPlaying?: boolean;
+  onObjectClick?: (objectName: string) => void;
   phase?: 'interphase' | 'prophase' | 'metaphase' | 'anaphase' | 'telophase' | 'cytokinesis';
   autoAnimate?: boolean;
   showLabels?: boolean;
@@ -23,6 +26,9 @@ interface Chromosome {
 }
 
 export function CellDivisionModel({
+  currentPhase = 0,
+  isPlaying = false,
+  onObjectClick,
   phase = 'metaphase',
   autoAnimate = true,
   showLabels = true,
@@ -67,7 +73,7 @@ export function CellDivisionModel({
 
   // Animation loop
   useFrame((state, delta) => {
-    if (!autoAnimate) return;
+    if (!autoAnimate || !isPlaying) return;
     
     setAnimationTime(prev => prev + delta);
     
@@ -250,6 +256,7 @@ export function CellDivisionModel({
                     scale={phaseData.scale}
                     onPointerOver={() => setHoveredChromosome(chromosome.id)}
                     onPointerOut={() => setHoveredChromosome(null)}
+                    onClick={() => onObjectClick?.(`Chromosome ${chromosome.id + 1}`)}
                   >
                     <meshStandardMaterial 
                       color={chromosome.color}

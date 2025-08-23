@@ -6,9 +6,10 @@ import { projectId, publicAnonKey } from '../utils/supabase/info';
 
 interface AuthScreenProps {
   onAuthSuccess: () => void;
+  onDemoMode?: () => void;
 }
 
-export function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
+export function AuthScreen({ onAuthSuccess, onDemoMode }: AuthScreenProps) {
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -43,43 +44,48 @@ export function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
         }
       } else {
         // Register
-        const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-3b039bbc/auth/register`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${publicAnonKey}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            email: formData.email,
-            password: formData.password,
-            name: formData.name,
-            role: formData.role
-          })
-        });
-
-        if (response.ok) {
-          // Auto-login after registration
-          const { data, error } = await supabase.auth.signInWithPassword({
-            email: formData.email,
-            password: formData.password,
+        try {
+          const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-3b039bbc/auth/register`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${publicAnonKey}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              email: formData.email,
+              password: formData.password,
+              name: formData.name,
+              role: formData.role
+            })
           });
 
-          if (error) {
-            setError('Registration succeeded but login failed: ' + error.message);
-            return;
-          }
+          if (response.ok) {
+            // Auto-login after registration
+            const { data, error } = await supabase.auth.signInWithPassword({
+              email: formData.email,
+              password: formData.password,
+            });
 
-          if (data.session) {
-            onAuthSuccess();
+            if (error) {
+              setError('Registration succeeded but login failed: ' + error.message);
+              return;
+            }
+
+            if (data.session) {
+              onAuthSuccess();
+            }
+          } else {
+            const errorData = await response.json();
+            setError('Registration failed: ' + errorData.error);
           }
-        } else {
-          const errorData = await response.json();
-          setError('Registration failed: ' + errorData.error);
+        } catch (fetchError) {
+          console.error('Registration fetch error:', fetchError);
+          setError('Registration service unavailable. Please try demo login or contact support.');
         }
       }
     } catch (error) {
       console.error('Auth error:', error);
-      setError('Authentication failed');
+      setError('Authentication failed. Please check your connection and try again.');
     } finally {
       setLoading(false);
     }
@@ -307,6 +313,20 @@ export function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
             >
               Demo Teacher Login
             </Button>
+
+            {onDemoMode && (
+              <>
+                <div className="text-center text-gray-500 text-sm">OR</div>
+                <Button
+                  onClick={onDemoMode}
+                  disabled={loading}
+                  variant="outline"
+                  className="w-full border-blue-600 text-blue-300 hover:bg-blue-700/20"
+                >
+                  🚀 Quick Demo Mode (No Login)
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </div>

@@ -1,4 +1,4 @@
-import React, { Suspense, useRef } from 'react';
+import React, { Suspense, useRef, useMemo, useEffect } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Environment, PerspectiveCamera } from '@react-three/drei';
 
@@ -42,6 +42,58 @@ export function ThreeScene({
 }: ThreeSceneProps) {
   const controlsRef = useRef<any>(null);
 
+  const handleContextLost = (event: any) => {
+    console.warn('WebGL context lost, attempting to restore...');
+    event.preventDefault();
+  };
+
+  const handleContextRestored = () => {
+    console.log('WebGL context restored successfully');
+  };
+
+  const handleError = (error: any) => {
+    console.error('Three.js error:', error);
+  };
+
+  // Handle WebGL context loss
+  useEffect(() => {
+    const canvas = document.querySelector('canvas');
+    if (canvas) {
+      const handleContextLost = (event: any) => {
+        console.warn('WebGL context lost, attempting to restore...');
+        event.preventDefault();
+      };
+
+      const handleContextRestored = () => {
+        console.log('WebGL context restored successfully');
+      };
+
+      canvas.addEventListener('webglcontextlost', handleContextLost);
+      canvas.addEventListener('webglcontextrestored', handleContextRestored);
+
+      return () => {
+        canvas.removeEventListener('webglcontextlost', handleContextLost);
+        canvas.removeEventListener('webglcontextrestored', handleContextRestored);
+      };
+    }
+  }, []);
+
+  // Memoize GL context options to prevent unnecessary re-renders
+  const glOptions = useMemo(() => ({
+    antialias: true, 
+    alpha: true,
+    powerPreference: "high-performance" as const,
+    preserveDrawingBuffer: false,
+    failIfMajorPerformanceCaveat: false
+  }), []);
+
+  const cameraOptions = useMemo(() => ({
+    position: camera.position, 
+    fov: camera.fov,
+    near: 0.1,
+    far: 1000
+  }), [camera.position, camera.fov]);
+
   return (
     <div 
       className="w-full h-full relative overflow-hidden"
@@ -50,17 +102,9 @@ export function ThreeScene({
       <Suspense fallback={<LoadingFallback />}>
         <Canvas
           shadows
-          gl={{ 
-            antialias: true, 
-            alpha: true,
-            powerPreference: "high-performance"
-          }}
-          camera={{ 
-            position: camera.position, 
-            fov: camera.fov,
-            near: 0.1,
-            far: 1000
-          }}
+          gl={glOptions}
+          camera={cameraOptions}
+          onError={handleError}
         >
           {/* Lighting */}
           <ambientLight intensity={0.4} />

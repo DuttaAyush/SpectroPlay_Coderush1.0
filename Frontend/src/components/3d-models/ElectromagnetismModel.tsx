@@ -4,6 +4,9 @@ import { Sphere, Cylinder, Text, Line } from '@react-three/drei';
 import * as THREE from 'three';
 
 interface ElectromagnetismModelProps {
+  currentPhase?: number;
+  isPlaying?: boolean;
+  onObjectClick?: (objectName: string) => void;
   showElectricField?: boolean;
   showMagneticField?: boolean;
   animate?: boolean;
@@ -30,6 +33,9 @@ interface FieldLine {
 }
 
 export function ElectromagnetismModel({
+  currentPhase = 0,
+  isPlaying = false,
+  onObjectClick,
   showElectricField = true,
   showMagneticField = false,
   animate = true,
@@ -214,7 +220,7 @@ export function ElectromagnetismModel({
 
   // Animation loop
   useFrame((state, delta) => {
-    if (!animate) return;
+    if (!animate || !isPlaying) return;
     
     setAnimationTime(prev => prev + delta);
     
@@ -277,6 +283,7 @@ export function ElectromagnetismModel({
             args={[0.3, 16, 16]}
             onPointerOver={() => setHoveredCharge(charge.id)}
             onPointerOut={() => setHoveredCharge(null)}
+            onClick={() => onObjectClick?.(`${charge.charge > 0 ? 'Positive' : 'Negative'} Charge`)}
           >
             <meshStandardMaterial 
               color={charge.color}

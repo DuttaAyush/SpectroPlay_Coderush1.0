@@ -32,6 +32,7 @@
             "@react-three/drei": "^9.88.0",
             "@react-three/fiber": "^8.15.0",
             "@supabase/supabase-js": "*",
+            "@google/genai": "^0.15.0",
             "@types/three": "^0.158.0",
             "class-variance-authority": "^0.7.1",
             "clsx": "*",

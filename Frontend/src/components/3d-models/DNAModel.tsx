@@ -4,6 +4,9 @@ import { Text, Sphere, Cylinder, Line } from '@react-three/drei';
 import * as THREE from 'three';
 
 interface DNAModelProps {
+  currentPhase?: number;
+  isPlaying?: boolean;
+  onObjectClick?: (objectName: string) => void;
   animate?: boolean;
   showReplication?: boolean;
   autoRotate?: boolean;
@@ -28,6 +31,9 @@ interface BasePair {
 }
 
 export function DNAModel({ 
+  currentPhase = 0,
+  isPlaying = false,
+  onObjectClick,
   animate = true, 
   showReplication = false,
   autoRotate = true,
@@ -77,7 +83,7 @@ export function DNAModel({
 
   // Animation loop
   useFrame((state, delta) => {
-    if (!animate) return;
+    if (!animate || !isPlaying) return;
     
     if (groupRef.current) {
       groupRef.current.rotation.y += delta * 0.5;
@@ -183,6 +189,7 @@ export function DNAModel({
               args={[0.15, 16, 16]}
               onPointerOver={() => setHoveredBase(pair.id)}
               onPointerOut={() => setHoveredBase(null)}
+              onClick={() => onObjectClick?.(`${pair.base1} (Adenine)`)}
             >
               <meshStandardMaterial 
                 color={pair.colors[pair.base1 as keyof typeof pair.colors]}
@@ -197,6 +204,7 @@ export function DNAModel({
               args={[0.15, 16, 16]}
               onPointerOver={() => setHoveredBase(pair.id)}
               onPointerOut={() => setHoveredBase(null)}
+              onClick={() => onObjectClick?.(`${pair.base2} (Thymine)`)}
             >
               <meshStandardMaterial 
                 color={pair.colors[pair.base2 as keyof typeof pair.colors]}
