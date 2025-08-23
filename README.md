@@ -169,7 +169,6 @@ We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.
 - **Performance Optimization** - Better rendering and loading
 - **Educational Content** - Learning materials and assessments
 
-
 ## 📸 Screenshots
 
 ### Home & Interactive 3D Preview
