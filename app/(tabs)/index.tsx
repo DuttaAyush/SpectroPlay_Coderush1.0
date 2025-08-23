@@ -1,332 +1,392 @@
-import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  ImageBackground,
-} from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { StatusBar } from 'expo-status-bar';
-import { AArrowDown as DNA, Zap, Globe, Atom, ArrowRight, Play } from 'lucide-react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { HomeScreen } from '../../components/HomeScreen';
+import { SimulatePage } from '../../components/SimulatePage';
+import { SimulationScreen } from '../../components/SimulationScreen';
+import { TeacherDashboard } from '../../components/TeacherDashboard';
+import { ProfileScreen } from '../../components/ProfileScreen';
+import { BottomNavigation } from '../../components/BottomNavigation';
+import { AuthScreen } from '../../components/AuthScreen';
+import { supabase } from '../../utils/supabase/client';
 
-interface ModuleTileProps {
-  title: string;
-  description: string;
-  progress: number;
-  icon: React.ReactNode;
-  imageUrl: string;
-  onPress: () => void;
-  isNew?: boolean;
+// Import necessary Three.js dependencies for 3D Viewer integration
+import * as THREE from 'three';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { TubeGeometry } from 'three/src/geometries/TubeGeometry.js';
+
+// A React wrapper component for the ThreeDViewer class
+class ThreeDViewer {
+  private canvas: HTMLCanvasElement;
+  private scene = new THREE.Scene();
+  private camera: THREE.PerspectiveCamera;
+  private renderer: THREE.WebGLRenderer;
+  private controls: OrbitControls;
+  private raycaster = new THREE.Raycaster();
+  private pointer = new THREE.Vector2();
+  private activeObjects: THREE.Object3D[] = [];
+  private onObjectClick: (name: string) => void = () => {};
+  private lastClicked: THREE.Mesh | null = null;
+  private originalColor = new THREE.Color();
+  private highlightColor = new THREE.Color(0x58a6ff);
+
+  constructor(canvas: HTMLCanvasElement) {
+    this.canvas = canvas;
+    this.camera = new THREE.PerspectiveCamera(75, canvas.clientWidth / canvas.clientHeight, 0.1, 1000);
+    this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: true, alpha: true });
+    this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+    this.init();
+  }
+
+  private init() {
+    this.renderer.setSize(this.canvas.clientWidth, this.canvas.clientHeight);
+
+    // Mobile-specific optimizations
+    if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+      this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      this.controls.enableDamping = false;
+    } else {
+      this.renderer.setPixelRatio(window.devicePixelRatio);
+      this.controls.enableDamping = true;
+    }
+
+    this.camera.position.z = 50;
+    this.controls.minDistance = 5;
+    this.controls.maxDistance = 200;
+
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+    this.scene.add(ambientLight);
+    const pointLight = new THREE.PointLight(0xffffff, 2);
+    pointLight.position.set(0, 0, 0);
+    this.scene.add(pointLight);
+
+    this.canvas.addEventListener('click', this.onClick.bind(this));
+    window.addEventListener('resize', this.onResize.bind(this));
+
+    // Touch support
+    this.canvas.addEventListener('touchstart', this.onTouchStart.bind(this), { passive: false });
+    this.canvas.addEventListener('touchmove', this.onTouchMove.bind(this), { passive: false });
+
+    this.animate();
+  }
+
+  private animate() {
+    requestAnimationFrame(this.animate.bind(this));
+    this.controls.update();
+    this.activeObjects.forEach(obj => {
+      if (obj.userData.update) obj.userData.update();
+    });
+    this.renderer.render(this.scene, this.camera);
+  }
+
+  private onResize() {
+    const container = this.canvas.parentElement;
+    if (!container) return;
+    this.camera.aspect = container.clientWidth / container.clientHeight;
+    this.camera.updateProjectionMatrix();
+    this.renderer.setSize(container.clientWidth, container.clientHeight);
+  }
+
+  private onClick(event: MouseEvent) {
+    const rect = this.canvas.getBoundingClientRect();
+    this.pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+    this.pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+    this.raycaster.setFromCamera(this.pointer, this.camera);
+    const intersects = this.raycaster.intersectObjects(this.activeObjects, true);
+
+    if (this.lastClicked) {
+      const material = this.lastClicked.material as THREE.MeshStandardMaterial;
+      if (material.emissive) {
+        material.emissive.set(this.originalColor);
+      }
+      this.lastClicked = null;
+    }
+
+    if (intersects.length > 0) {
+      const firstIntersect = intersects[0].object;
+      if (firstIntersect instanceof THREE.Mesh && firstIntersect.name) {
+        const material = firstIntersect.material as THREE.MeshStandardMaterial;
+        if (material.emissive) {
+          this.lastClicked = firstIntersect;
+          this.originalColor.copy(material.emissive);
+          material.emissive.set(this.highlightColor);
+        }
+        this.onObjectClick(firstIntersect.name);
+      }
+    }
+  }
+
+  private onTouchStart(event: TouchEvent) {
+    event.preventDefault();
+    const touch = event.touches[0];
+    const rect = this.canvas.getBoundingClientRect();
+    this.pointer.x = ((touch.clientX - rect.left) / rect.width) * 2 - 1;
+    this.pointer.y = -((touch.clientY - rect.top) / rect.height) * 2 + 1;
+
+    this.onClick(new MouseEvent('click', {
+      clientX: touch.clientX,
+      clientY: touch.clientY
+    }));
+  }
+
+  private onTouchMove(event: TouchEvent) {
+    event.preventDefault();
+  }
+
+  public setOnClickCallback(callback: (name: string) => void) {
+    this.onObjectClick = callback;
+  }
+
+  public cleanup() {
+    while (this.scene.children.length > 0) {
+      const obj = this.scene.children[0];
+      this.scene.remove(obj);
+      if (obj instanceof THREE.Mesh) {
+        obj.geometry.dispose();
+        if (Array.isArray(obj.material)) {
+          obj.material.forEach(material => material.dispose());
+        } else {
+          (obj.material as THREE.Material).dispose();
+        }
+      }
+    }
+    this.activeObjects = [];
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+    this.scene.add(ambientLight);
+    const pointLight = new THREE.PointLight(0xffffff, 2);
+    pointLight.position.set(0, 0, 0);
+    this.scene.add(pointLight);
+  }
+
+  public loadSolarSystem() {
+    this.cleanup();
+    this.camera.position.set(0, 40, 120);
+    this.controls.update();
+
+    const createPlanet = (name: string, radius: number, color: number, distance: number, speed: number) => {
+      const geometry = new THREE.SphereGeometry(radius, 32, 32);
+      const material = new THREE.MeshStandardMaterial({ color });
+      const planet = new THREE.Mesh(geometry, material);
+      planet.name = name;
+
+      const pivot = new THREE.Object3D();
+      this.scene.add(pivot);
+      pivot.add(planet);
+
+      planet.position.x = distance;
+
+      pivot.userData.update = () => {
+        pivot.rotation.y += speed * 0.01;
+      };
+      this.activeObjects.push(pivot);
+
+      return planet;
+    };
+
+    const sunGeo = new THREE.SphereGeometry(10, 32, 32);
+    const sunMat = new THREE.MeshBasicMaterial({ color: 0xfdb813 });
+    const sun = new THREE.Mesh(sunGeo, sunMat);
+    sun.name = "Sun";
+    this.scene.add(sun);
+    this.activeObjects.push(sun);
+
+    this.activeObjects.push(createPlanet("Mercury", 2, 0x8c8c8c, 20, 4.7));
+    this.activeObjects.push(createPlanet("Venus", 3, 0xd8a162, 30, 3.5));
+    this.activeObjects.push(createPlanet("Earth", 3.2, 0x4f70a5, 45, 2.9));
+    this.activeObjects.push(createPlanet("Mars", 2.5, 0xc1440e, 60, 2.4));
+    this.activeObjects.push(createPlanet("Jupiter", 7, 0xdeaf8c, 85, 1.3));
+    this.activeObjects.push(createPlanet("Saturn", 6, 0xe3d9b4, 110, 0.9));
+    this.activeObjects.push(createPlanet("Uranus", 4, 0xace5ee, 135, 0.6));
+    this.activeObjects.push(createPlanet("Neptune", 4, 0x3e54e8, 155, 0.5));
+
+    this.onResize();
+  }
+
+  // Additional models (DNA, Neon Atom) would be added similarly...
+
 }
 
-const ModuleTile: React.FC<ModuleTileProps> = ({
-  title,
-  description,
-  progress,
-  icon,
-  imageUrl,
-  onPress,
-  isNew,
-}) => (
-  <TouchableOpacity style={styles.moduleTile} onPress={onPress} activeOpacity={0.8}>
-    <ImageBackground
-      source={{ uri: imageUrl }}
-      style={styles.moduleBackground}
-      imageStyle={styles.moduleImage}
-    >
-      <LinearGradient
-        colors={['rgba(10, 11, 26, 0.3)', 'rgba(10, 11, 26, 0.9)']}
-        style={styles.moduleOverlay}
-      >
-        {isNew && (
-          <View style={styles.newBadge}>
-            <Text style={styles.newBadgeText}>NEW</Text>
-          </View>
-        )}
-        <View style={styles.moduleIcon}>
-          {icon}
-        </View>
-        <View style={styles.moduleContent}>
-          <Text style={styles.moduleTitle}>{title}</Text>
-          <Text style={styles.moduleDescription}>{description}</Text>
-          <View style={styles.progressContainer}>
-            <View style={styles.progressBar}>
-              <View 
-                style={[styles.progressFill, { width: `${progress}%` }]} 
-              />
-            </View>
-            <Text style={styles.progressText}>{progress}%</Text>
-          </View>
-        </View>
-        <View style={styles.moduleAction}>
-          <ArrowRight size={20} color="#3B82F6" />
-        </View>
-      </LinearGradient>
-    </ImageBackground>
-  </TouchableOpacity>
-);
+const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-const QuickActionCard: React.FC<{
-  title: string;
-  subtitle: string;
-  icon: React.ReactNode;
-  onPress: () => void;
-}> = ({ title, subtitle, icon, onPress }) => (
-  <TouchableOpacity style={styles.quickActionCard} onPress={onPress} activeOpacity={0.8}>
-    <View style={styles.quickActionIcon}>
-      {icon}
-    </View>
-    <View style={styles.quickActionContent}>
-      <Text style={styles.quickActionTitle}>{title}</Text>
-      <Text style={styles.quickActionSubtitle}>{subtitle}</Text>
-    </View>
-  </TouchableOpacity>
-);
+export default function App() {
+  const [activeTab, setActiveTab] = useState('home');
+  const [selectedModule, setSelectedModule] = useState<string | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [userRole, setUserRole] = useState<string>('student');
 
-export default function HomeScreen() {
-  const handleModulePress = (moduleName: string) => {
-    console.log(`Opening ${moduleName} module`);
+  // 3D Viewer canvas reference and instance
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const threeDViewerRef = useRef<ThreeDViewer | null>(null);
+
+  // Handler to receive object name clicks from 3D viewer
+  const on3DObjectClick = (name: string) => {
+    alert(`You clicked on ${name}.`);
+    // You may integrate AI chat fetching here as in original code logic
   };
 
-  const handleQuickAction = (action: string) => {
-    console.log(`Quick action: ${action}`);
+  useEffect(() => {
+    checkAuthState();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' && session) {
+        setIsAuthenticated(true);
+        setUserRole(session.user.user_metadata?.role || 'student');
+      } else if (event === 'SIGNED_OUT') {
+        setIsAuthenticated(false);
+        setUserRole('student');
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === 'simulate' && selectedModule === 'solar-system') {
+      // Initialize 3D viewer on the canvas if canvas available
+      if (canvasRef.current) {
+        if (!threeDViewerRef.current) {
+          threeDViewerRef.current = new ThreeDViewer(canvasRef.current);
+          threeDViewerRef.current.setOnClickCallback(on3DObjectClick);
+          threeDViewerRef.current.loadSolarSystem();
+        }
+      }
+    } else {
+      // Clean up 3D viewer if user leaves simulation or changes module
+      if (threeDViewerRef.current) {
+        threeDViewerRef.current.cleanup();
+        threeDViewerRef.current = null;
+      }
+    }
+  }, [activeTab, selectedModule]);
+
+  const checkAuthState = async () => {
+    try {
+      const { data: { session }, error } = await supabase.auth.getSession();
+
+      if (session?.user) {
+        setIsAuthenticated(true);
+        setUserRole(session.user.user_metadata?.role || 'student');
+      } else {
+        setIsAuthenticated(false);
+      }
+    } catch (error) {
+      console.error('Auth check error:', error);
+      setIsAuthenticated(false);
+    }
   };
+
+  const handleAuthSuccess = () => {
+    setIsAuthenticated(true);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      setIsAuthenticated(false);
+      setActiveTab('home');
+      setSelectedModule(null);
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
+
+  const handleModuleSelect = (moduleId: string) => {
+    setSelectedModule(moduleId);
+    setActiveTab('simulate');
+  };
+
+  const handleBackToSimulate = () => {
+    setSelectedModule(null);
+    setActiveTab('simulate');
+  };
+
+  const handleBackToHome = () => {
+    setSelectedModule(null);
+    setActiveTab('home');
+  };
+
+  // Show loading state while checking authentication
+  if (isAuthenticated === null) {
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-400 mx-auto mb-4"></div>
+          <p className="text-white">Loading InsightXR...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show auth screen if not authenticated
+  if (!isAuthenticated) {
+    return <AuthScreen onAuthSuccess={handleAuthSuccess} />;
+  }
+
+  // Render main content including 3D canvas during simulation with solar system module
+  const renderContent = () => {
+    if (selectedModule) {
+      if (selectedModule === 'solar-system') {
+        return (
+          <div className="relative flex flex-col flex-1 bg-gray-800">
+            <button
+              onClick={activeTab === 'home' ? handleBackToHome : handleBackToSimulate}
+              className="absolute top-2 left-2 z-10 px-4 py-2 bg-blue-600 rounded text-white"
+            >
+              Back
+            </button>
+            <canvas
+              ref={canvasRef}
+              style={{ width: '100%', height: '100vh', display: 'block' }}
+              id="3d-canvas"
+            />
+          </div>
+        );
+      }
+      return (
+        <SimulationScreen
+          moduleId={selectedModule}
+          onBack={activeTab === 'home' ? handleBackToHome : handleBackToSimulate}
+        />
+      );
+    }
+
+    switch (activeTab) {
+      case 'home':
+        return <HomeScreen onModuleSelect={handleModuleSelect} />;
+      case 'simulate':
+        return <SimulatePage onModuleSelect={handleModuleSelect} />;
+      case 'dashboard':
+        return <TeacherDashboard />;
+      case 'profile':
+        return <ProfileScreen onLogout={handleLogout} />;
+      default:
+        return <HomeScreen onModuleSelect={handleModuleSelect} />;
+    }
+  };
+
+  // Available tabs for bottom navigation
+  const availableTabs = ['home', 'simulate', 'dashboard', 'profile'];
 
   return (
-    <View style={styles.container}>
-      <StatusBar style="light" />
-      
-      <LinearGradient
-        colors={['#0A0B1A', '#1F2937']}
-        style={styles.header}
-      >
-        <View style={styles.headerContent}>
-          <Text style={styles.greeting}>Good morning, Sarah!</Text>
-          <Text style={styles.subtitle}>Continue your STEM journey</Text>
-        </View>
-      </LinearGradient>
+    <div className="min-h-screen bg-gray-900 flex flex-col max-w-md mx-auto relative">
+      {/* Status Bar Simulation */}
+      <div className="bg-gray-900 text-white p-2 text-center text-xs">
+        9:41 AM • InsightXR
+      </div>
 
-      <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Quick Actions</Text>
-          <View style={styles.quickActionsGrid}>
-            <QuickActionCard
-              title="Resume Learning"
-              subtitle="Cell Division"
-              icon={<Play size={24} color="#3B82F6" />}
-              onPress={() => handleQuickAction('resume')}
-            />
-            <QuickActionCard
-              title="Take Quiz"
-              subtitle="DNA Replication"
-              icon={<Atom size={24} color="#8B5CF6" />}
-              onPress={() => handleQuickAction('quiz')}
-            />
-          </View>
-        </View>
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col" style={{ paddingBottom: selectedModule ? '0' : '70px' }}>
+        {renderContent()}
+      </div>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>STEM Modules</Text>
-          
-          <ModuleTile
-            title="DNA Replication"
-            description="Explore molecular biology through immersive 3D visualization"
-            progress={85}
-            icon={<DNA size={32} color="#06B6D4" />}
-            imageUrl="https://images.pexels.com/photos/3825539/pexels-photo-3825539.jpeg"
-            onPress={() => handleModulePress('DNA Replication')}
-            isNew
-          />
-
-          <ModuleTile
-            title="Electromagnetism"
-            description="Understand magnetic fields and electromagnetic forces"
-            progress={60}
-            icon={<Zap size={32} color="#F59E0B" />}
-            imageUrl="https://images.pexels.com/photos/414860/pexels-photo-414860.jpeg"
-            onPress={() => handleModulePress('Electromagnetism')}
-          />
-
-          <ModuleTile
-            title="Orbital Mechanics"
-            description="Discover planetary motion and gravitational forces"
-            progress={40}
-            icon={<Globe size={32} color="#10B981" />}
-            imageUrl="https://images.pexels.com/photos/73871/rocket-launch-rocket-take-off-nasa-73871.jpeg"
-            onPress={() => handleModulePress('Orbital Mechanics')}
-          />
-
-          <ModuleTile
-            title="Atomic Structure"
-            description="Journey into the world of atoms and subatomic particles"
-            progress={25}
-            icon={<Atom size={32} color="#8B5CF6" />}
-            imageUrl="https://images.pexels.com/photos/7723506/pexels-photo-7723506.jpeg"
-            onPress={() => handleModulePress('Atomic Structure')}
-          />
-        </View>
-
-        <View style={styles.bottomSpacing} />
-      </ScrollView>
-    </View>
+      {/* Bottom Navigation - Hide when in simulation with module selected */}
+      {!selectedModule && (
+        <BottomNavigation
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          availableTabs={availableTabs}
+        />
+      )}
+    </div>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#0A0B1A',
-  },
-  header: {
-    paddingTop: 60,
-    paddingBottom: 30,
-    paddingHorizontal: 20,
-  },
-  headerContent: {
-    alignItems: 'flex-start',
-  },
-  greeting: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    marginBottom: 4,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#9CA3AF',
-    fontWeight: '400',
-  },
-  scrollContainer: {
-    flex: 1,
-  },
-  section: {
-    paddingHorizontal: 20,
-    marginBottom: 32,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    marginBottom: 16,
-  },
-  quickActionsGrid: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  quickActionCard: {
-    flex: 1,
-    backgroundColor: '#1F2937',
-    borderRadius: 16,
-    padding: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#374151',
-  },
-  quickActionIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  quickActionContent: {
-    flex: 1,
-  },
-  quickActionTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    marginBottom: 2,
-  },
-  quickActionSubtitle: {
-    fontSize: 12,
-    color: '#9CA3AF',
-  },
-  moduleTile: {
-    height: 140,
-    borderRadius: 20,
-    marginBottom: 16,
-    overflow: 'hidden',
-  },
-  moduleBackground: {
-    flex: 1,
-  },
-  moduleImage: {
-    borderRadius: 20,
-  },
-  moduleOverlay: {
-    flex: 1,
-    padding: 20,
-    justifyContent: 'space-between',
-  },
-  newBadge: {
-    position: 'absolute',
-    top: 16,
-    right: 16,
-    backgroundColor: '#06B6D4',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  newBadgeText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    letterSpacing: 0.5,
-  },
-  moduleIcon: {
-    alignSelf: 'flex-start',
-  },
-  moduleContent: {
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
-  moduleTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    marginBottom: 4,
-  },
-  moduleDescription: {
-    fontSize: 14,
-    color: '#D1D5DB',
-    marginBottom: 12,
-    lineHeight: 20,
-  },
-  progressContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  progressBar: {
-    flex: 1,
-    height: 6,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 3,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: '#3B82F6',
-    borderRadius: 3,
-  },
-  progressText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#3B82F6',
-    minWidth: 32,
-  },
-  moduleAction: {
-    position: 'absolute',
-    top: 20,
-    right: 20,
-  },
-  bottomSpacing: {
-    height: 100,
-  },
-});
